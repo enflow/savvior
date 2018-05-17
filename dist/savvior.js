@@ -164,6 +164,10 @@ Grid.prototype.setup = function(options, callback) {
     return false;
   }
 
+  each(this.element.children, function(item, order) {
+      item.setAttribute('data-savvior-id', order);
+  });
+
   // Retrieve the list of items from the grid itself.
   var range = document.createRange();
   var items = document.createElement('div');
@@ -188,7 +192,6 @@ Grid.prototype.addColumns = function(items, options) {
   var columnClasses = options.columnClasses || ['column', 'size-1of'+ options.columns];
   var columnsFragment = document.createDocumentFragment();
   var columnsItems = [];
-  var i = options.columns;
   var childSelector;
   var column, rowsFragment;
 
@@ -197,9 +200,17 @@ Grid.prototype.addColumns = function(items, options) {
 
   columnClasses = Array.isArray(columnClasses) ? columnClasses.join(' ') : columnClasses;
 
-  while (i-- !== 0) {
-    childSelector = '[data-columns] > *:nth-child(' + options.columns + 'n-' + i + ')';
-    columnsItems.push(items.querySelectorAll(childSelector));
+  // @TODO: add support for dynamilcaly added columns
+  var sortedItems = [].slice.call(items.querySelectorAll('[data-columns] > *')).sort(function(a, b) {
+      var aKey = parseInt(a.getAttribute('data-savvior-id'));
+      var bKey = parseInt(b.getAttribute('data-savvior-id'));
+      return aKey < bKey ? -1 : (aKey > bKey) ? 1 : 0;
+  });
+
+  var perColumn = Math.ceil(items.querySelectorAll('[data-columns] > *').length / options.columns);
+
+  for (var i = 0; i < options.columns; i++) {
+      columnsItems.push(sortedItems.slice(perColumn * i, perColumn * (i + 1)));
   }
 
   each(columnsItems, function(rows) {
